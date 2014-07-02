@@ -1,16 +1,16 @@
 /**
  * Copyright (c) Codice Foundation
- * 
+ *
  * This is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser
  * General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details. A copy of the GNU Lesser General Public License
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
- * 
+ *
  **/
 package ddf.catalog.impl;
 
@@ -123,12 +123,10 @@ import ddf.catalog.util.impl.SourceDescriptorComparator;
 import ddf.catalog.util.impl.SourcePoller;
 
 /**
- * 
  * CatalogFrameworkImpl is the core class of DDF. It is used for query, create, update, delete, and
  * resource retrieval operations.
- * 
+ *
  * @author ddf.isgs@lmco.com
- * 
  */
 @SuppressWarnings("deprecation")
 public class CatalogFrameworkImpl extends DescribableImpl implements ConfigurationWatcher,
@@ -138,12 +136,13 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     private static final String DEFAULT_RESOURCE_NOT_FOUND_MESSAGE = "Unknown resource request";
 
-    private static final XLogger logger = new XLogger(LoggerFactory.getLogger(CatalogFrameworkImpl.class));
+    private static final XLogger logger = new XLogger(
+            LoggerFactory.getLogger(CatalogFrameworkImpl.class));
 
     static final Logger INGEST_LOGGER = LoggerFactory.getLogger("ingestLogger");
 
     protected static final String FAILED_BY_GET_RESOURCE_PLUGIN = "Error during Pre/PostResourcePlugin.";
-    
+
     private static final int MS_PER_SECOND = 1000;
 
     // The local catalog provider, which is set to the first item in the {@link List} of
@@ -218,6 +217,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     protected List<ResourceReader> resourceReaders;
 
     // TODO make this private
+
     /**
      * The OSGi bundle context for this catalog framework.
      */
@@ -227,6 +227,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     protected int threadPoolSize;
 
     // TODO make this private
+
     /**
      * An {@link ExecutorService} used to manage threaded operations
      */
@@ -235,7 +236,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     private Masker masker;
 
     private SourcePoller poller;
-    
+
     protected ResourceCache productCache;
 
     protected long monitorPeriod;
@@ -250,11 +251,10 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
      */
     protected int delayBetweenAttempts;
 
-    
     protected boolean cacheEnabled = false;
 
     protected boolean cacheWhenCanceled = false;
-    
+
     protected DownloadsStatusEventPublisher retrieveStatusEventPublisher;
 
     protected DownloadsStatusEventListener retrieveStatusEventListener;
@@ -262,52 +262,36 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     protected DownloadStatusInfo downloadStatusInfo;
 
     protected boolean notificationEnabled = true;
-    
+
     protected boolean activityEnabled = true;
 
     /**
      * Instantiates a new CatalogFrameworkImpl
-     * 
+     *
+     * @param context          - The BundleContext that will be utilized by this instance.
+     * @param catalog          - The {@link CatalogProvider} used for query, create, update, and delete
+     *                         operations.
+     * @param preIngest        - A {@link List} of {@link PreIngestPlugin}(s) that will be invoked prior to the
+     *                         ingest operation.
+     * @param postIngest       - A list of {@link PostIngestPlugin}(s) that will be invoked after the ingest
+     *                         operation.
+     * @param preQuery         - A {@link List} of {@link PreQueryPlugin}(s) that will be invoked prior to the
+     *                         query operation.
+     * @param postQuery        - A {@link List} of {@link PostQueryPlugin}(s) that will be invoked after the
+     *                         query operation.
+     * @param preResource      - A {@link List} of {@link PreResourcePlugin}(s) that will be invoked prior to the
+     *                         getResource operation.
+     * @param postResource     - A {@link List} of {@link PostResourcePlugin}(s) that will be invoked after the
+     *                         getResource operation.
+     * @param connectedSources - {@link List} of {@link ConnectedSource}(s) that will be searched on all queries
+     * @param federatedSources - A {@link List} of {@link FederatedSource}(s) that will be searched on an
+     *                         enterprise query.
+     * @param resourceReaders  - set of {@link ResourceReader}(s) that will be get a {@link Resource}
+     * @param queryStrategy    - The default federation strategy (e.g. Sorted).
+     * @param pool             - An ExecutorService used to manage threaded operations.
+     * @param poller           - An {@link SourcePoller} used to poll source availability.
      * @deprecated Use
-     *             {@link #CatalogFrameworkImpl(BundleContext, List, List, List, List, List, List, List, List, List, List, FederationStrategy, ExecutorService, SourcePoller)}
-     * 
-     * @param context
-     *            - The BundleContext that will be utilized by this instance.
-     * @param catalog
-     *            - The {@link CatalogProvider} used for query, create, update, and delete
-     *            operations.
-     * @param preIngest
-     *            - A {@link List} of {@link PreIngestPlugin}(s) that will be invoked prior to the
-     *            ingest operation.
-     * @param postIngest
-     *            - A list of {@link PostIngestPlugin}(s) that will be invoked after the ingest
-     *            operation.
-     * @param preQuery
-     *            - A {@link List} of {@link PreQueryPlugin}(s) that will be invoked prior to the
-     *            query operation.
-     * @param postQuery
-     *            - A {@link List} of {@link PostQueryPlugin}(s) that will be invoked after the
-     *            query operation.
-     * @param preResource
-     *            - A {@link List} of {@link PreResourcePlugin}(s) that will be invoked prior to the
-     *            getResource operation.
-     * @param postResource
-     *            - A {@link List} of {@link PostResourcePlugin}(s) that will be invoked after the
-     *            getResource operation.
-     * @param connectedSources
-     *            - {@link List} of {@link ConnectedSource}(s) that will be searched on all queries
-     * 
-     * @param federatedSources
-     *            - A {@link List} of {@link FederatedSource}(s) that will be searched on an
-     *            enterprise query.
-     * @param resourceReaders
-     *            - set of {@link ResourceReader}(s) that will be get a {@link Resource}
-     * @param queryStrategy
-     *            - The default federation strategy (e.g. Sorted).
-     * @param pool
-     *            - An ExecutorService used to manage threaded operations.
-     * @param poller
-     *            - An {@link SourcePoller} used to poll source availability.
+     * {@link #CatalogFrameworkImpl(BundleContext, List, List, List, List, List, List, List, List, List, List, FederationStrategy, ExecutorService, SourcePoller)}
      */
     public CatalogFrameworkImpl(BundleContext context, CatalogProvider catalogProvider,
             List<PreIngestPlugin> preIngest, List<PostIngestPlugin> postIngest,
@@ -323,46 +307,31 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     /**
      * Instantiates a new CatalogFrameworkImpl
-     * 
-     * @param catalog
-     *            - A {@link List} of {@link CatalogProvider} used for query, create, update, and
-     *            delete operations. Only the first item in this list is used as the local catalog
-     *            provider. A list is used to be able to detect when an actual CatalogProvider is
-     *            instantiated and bound by blueprint.
-     * @param context
-     *            - The BundleContext that will be utilized by this instance.
-     * @param preIngest
-     *            - A {@link List} of {@link PreIngestPlugin}(s) that will be invoked prior to the
-     *            ingest operation.
-     * @param postIngest
-     *            - A list of {@link PostIngestPlugin}(s) that will be invoked after the ingest
-     *            operation.
-     * @param preQuery
-     *            - A {@link List} of {@link PreQueryPlugin}(s) that will be invoked prior to the
-     *            query operation.
-     * @param postQuery
-     *            - A {@link List} of {@link PostQueryPlugin}(s) that will be invoked after the
-     *            query operation.
-     * @param preResource
-     *            - A {@link List} of {@link PreResourcePlugin}(s) that will be invoked prior to the
-     *            getResource operation.
-     * @param postResource
-     *            - A {@link List} of {@link PostResourcePlugin}(s) that will be invoked after the
-     *            getResource operation.
-     * @param connectedSources
-     *            - {@link List} of {@link ConnectedSource}(s) that will be searched on all queries
-     * 
-     * @param federatedSources
-     *            - A {@link List} of {@link FederatedSource}(s) that will be searched on an
-     *            enterprise query.
-     * @param resourceReaders
-     *            - set of {@link ResourceReader}(s) that will be get a {@link Resource}
-     * @param queryStrategy
-     *            - The default federation strategy (e.g. Sorted).
-     * @param pool
-     *            - An ExecutorService used to manage threaded operations.
-     * @param poller
-     *            - An {@link SourcePoller} used to poll source availability.
+     *
+     * @param catalog          - A {@link List} of {@link CatalogProvider} used for query, create, update, and
+     *                         delete operations. Only the first item in this list is used as the local catalog
+     *                         provider. A list is used to be able to detect when an actual CatalogProvider is
+     *                         instantiated and bound by blueprint.
+     * @param context          - The BundleContext that will be utilized by this instance.
+     * @param preIngest        - A {@link List} of {@link PreIngestPlugin}(s) that will be invoked prior to the
+     *                         ingest operation.
+     * @param postIngest       - A list of {@link PostIngestPlugin}(s) that will be invoked after the ingest
+     *                         operation.
+     * @param preQuery         - A {@link List} of {@link PreQueryPlugin}(s) that will be invoked prior to the
+     *                         query operation.
+     * @param postQuery        - A {@link List} of {@link PostQueryPlugin}(s) that will be invoked after the
+     *                         query operation.
+     * @param preResource      - A {@link List} of {@link PreResourcePlugin}(s) that will be invoked prior to the
+     *                         getResource operation.
+     * @param postResource     - A {@link List} of {@link PostResourcePlugin}(s) that will be invoked after the
+     *                         getResource operation.
+     * @param connectedSources - {@link List} of {@link ConnectedSource}(s) that will be searched on all queries
+     * @param federatedSources - A {@link List} of {@link FederatedSource}(s) that will be searched on an
+     *                         enterprise query.
+     * @param resourceReaders  - set of {@link ResourceReader}(s) that will be get a {@link Resource}
+     * @param queryStrategy    - The default federation strategy (e.g. Sorted).
+     * @param pool             - An ExecutorService used to manage threaded operations.
+     * @param poller           - An {@link SourcePoller} used to poll source availability.
      */
 
     // NOTE: The List<CatalogProvider> argument is first because when it was the second
@@ -393,7 +362,6 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     // the List<CatalogProvider> argument cannot be adjacent to the other List<T> arguments in the
     // signature - it must be separated by another type, hence the BundleContext
     // argument being second.
-
     public CatalogFrameworkImpl(List<CatalogProvider> catalogProvider, BundleContext context,
             List<PreIngestPlugin> preIngest, List<PostIngestPlugin> postIngest,
             List<PreQueryPlugin> preQuery, List<PostQueryPlugin> postQuery,
@@ -426,22 +394,22 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
             this.pool = pool;
         }
     }
-    
+
     public void setProductCache(ResourceCache productCache) {
         logger.debug("Injecting productCache");
         this.productCache = productCache;
     }
-    
+
     public void setProductCacheDirectory(String productCacheDirectory) {
-    	logger.debug("Setting product cache directory to {}", productCacheDirectory);
-    	this.productCache.setProductCacheDirectory(productCacheDirectory);
+        logger.debug("Setting product cache directory to {}", productCacheDirectory);
+        this.productCache.setProductCacheDirectory(productCacheDirectory);
     }
 
-    public void setCacheDirMaxSizeMegabytes(long maxSize){
+    public void setCacheDirMaxSizeMegabytes(long maxSize) {
         logger.debug("Setting product cache max size to {}", maxSize);
         this.productCache.setCacheDirMaxSizeMegabytes(maxSize);
     }
-    
+
     public void setCacheEnabled(boolean cacheEnabled) {
         logger.debug("Setting cacheEnabled = {}", cacheEnabled);
         this.cacheEnabled = cacheEnabled;
@@ -452,7 +420,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
         this.notificationEnabled = notificationEnabled;
         retrieveStatusEventPublisher.setNotificationEnabled(notificationEnabled);
     }
-    
+
     public void setActivityEnabled(boolean activityEnabled) {
         logger.debug("Setting activityEnabled = {}", activityEnabled);
         this.activityEnabled = activityEnabled;
@@ -461,14 +429,15 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     /**
      * Set the delay, in seconds, between product retrieval retry attempts.
-     * 
+     *
      * @param delayBetweenAttempts
      */
     public void setDelayBetweenRetryAttempts(int delayBetweenAttempts) {
-        logger.debug("Setting delayBetweenRetryAttempts = {} ms", delayBetweenAttempts * MS_PER_SECOND);
+        logger.debug("Setting delayBetweenRetryAttempts = {} ms",
+                delayBetweenAttempts * MS_PER_SECOND);
         this.delayBetweenAttempts = delayBetweenAttempts * MS_PER_SECOND;
     }
-    
+
     public void setMaxRetryAttempts(int maxRetryAttempts) {
         logger.debug("Setting maxRetryAttempts = {}", maxRetryAttempts);
         this.maxRetryAttempts = maxRetryAttempts;
@@ -477,41 +446,43 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     public void setDownloadStatusInfo(DownloadStatusInfo downloadStatusInfo) {
         this.downloadStatusInfo = downloadStatusInfo;
     }
-    
+
     /**
      * Set the frequency, in seconds, to monitor the product retrieval.
      * If this amount of time passes with no bytes being retrieved for
      * the product, then the monitor will start a new download attempt.
-     * 
+     *
      * @param retrievalMonitorPeriod
      */
     public void setRetrievalMonitorPeriod(int retrievalMonitorPeriod) {
-        logger.debug("Setting retrievalMonitorPeriod = {} ms", retrievalMonitorPeriod * MS_PER_SECOND);
+        logger.debug("Setting retrievalMonitorPeriod = {} ms",
+                retrievalMonitorPeriod * MS_PER_SECOND);
         this.monitorPeriod = retrievalMonitorPeriod * MS_PER_SECOND;
     }
-    
+
     public void setCacheWhenCanceled(boolean cacheWhenCanceled) {
         logger.debug("Setting cacheWhenCanceled = {}", cacheWhenCanceled);
         this.cacheWhenCanceled = cacheWhenCanceled;
     }
-    
-    public void setRetrieveStatusEventPublisher(DownloadsStatusEventPublisher retrieveStatusEventPublisher) {
+
+    public void setRetrieveStatusEventPublisher(
+            DownloadsStatusEventPublisher retrieveStatusEventPublisher) {
         this.retrieveStatusEventPublisher = retrieveStatusEventPublisher;
     }
 
-    public void setRetrieveStatusEventListener(DownloadsStatusEventListener retrieveStatusEventListener) {
+    public void setRetrieveStatusEventListener(
+            DownloadsStatusEventListener retrieveStatusEventListener) {
         this.retrieveStatusEventListener = retrieveStatusEventListener;
     }
-    
+
     /**
      * Invoked by blueprint when a {@link CatalogProvider} is created and bound to this
      * CatalogFramework instance.
-     * 
+     * <p/>
      * The local catalog provider will be set to the first item in the {@link List} of
      * {@link CatalogProvider}s bound to this CatalogFramework.
-     * 
-     * @param catalogProvider
-     *            the {@link CatalogProvider} being bound to this CatalogFramework instance
+     *
+     * @param catalogProvider the {@link CatalogProvider} being bound to this CatalogFramework instance
      */
     public void bind(CatalogProvider catalogProvider) {
         logger.trace("ENTERING: bind with CatalogProvider arg");
@@ -528,13 +499,12 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     /**
      * Invoked by blueprint when a {@link CatalogProvider} is deleted and unbound from this
      * CatalogFramework instance.
-     * 
+     * <p/>
      * The local catalog provider will be reset to the new first item in the {@link List} of
      * {@link CatalogProvider}s bound to this CatalogFramework. If this list of catalog providers is
      * currently empty, then the local catalog provider will be set to <code>null</code>.
-     * 
-     * @param catalogProvider
-     *            the {@link CatalogProvider} being unbound from this CatalogFramework instance
+     *
+     * @param catalogProvider the {@link CatalogProvider} being unbound from this CatalogFramework instance
      */
     public void unbind(CatalogProvider catalogProvider) {
         logger.trace("ENTERING: unbind with CatalogProvider arg");
@@ -556,9 +526,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     /**
      * Sets the {@link Masker}
-     * 
-     * @param masker
-     *            the {@link Masker} this framework will use
+     *
+     * @param masker the {@link Masker} this framework will use
      */
     public void setMasker(Masker masker) {
         synchronized (this) {
@@ -574,9 +543,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     /**
      * Sets the source id to identify this framework (DDF). This is also referred to as the site
      * name.
-     * 
-     * @param sourceId
-     *            the sourceId to set
+     *
+     * @param sourceId the sourceId to set
      */
     public void setId(String sourceId) {
         logger.debug("Setting id = " + sourceId);
@@ -590,7 +558,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     @Override
     public SourceInfoResponse getSourceInfo(SourceInfoRequest sourceInfoRequest)
-        throws SourceUnavailableException {
+            throws SourceUnavailableException {
         final String methodName = "getSourceInfo";
         SourceInfoResponse response = null;
         Set<SourceDescriptor> sourceDescriptors = null;
@@ -631,8 +599,9 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
                         // Check for the local catalog provider, DDF sourceId represents this
                         if (requestedSourceId.equals(getId())) {
-                            logger.debug("adding CatalogSourceDescriptor since it was in sourceId list as: "
-                                    + requestedSourceId);
+                            logger.debug(
+                                    "adding CatalogSourceDescriptor since it was in sourceId list as: "
+                                            + requestedSourceId);
                             addCatalogProviderDescriptor = true;
                         }
                     }
@@ -663,9 +632,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     /**
      * Creates a {@link Set} of {@link SourceDescriptor} based on the incoming list of
      * {@link Source}.
-     * 
-     * @param sources
-     *            {@link Collection} of {@link Source} to obtain descriptor information from
+     *
+     * @param sources {@link Collection} of {@link Source} to obtain descriptor information from
      * @return new {@link Set} of {@link SourceDescriptor}
      */
     private Set<SourceDescriptor> getFederatedSourceDescriptors(
@@ -686,7 +654,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
                     sourceDescriptor = new SourceDescriptorImpl(sourceId, source.getContentTypes());
                     sourceDescriptor.setVersion(source.getVersion());
                     sourceDescriptor.setAvailable(source.isAvailable());
-                    
+
                     sourceDescriptors.add(sourceDescriptor);
                 }
             }
@@ -713,9 +681,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     /**
      * Adds the local catalog's {@link SourceDescriptor} to the set of {@link SourceDescriptor}s for
      * this framework.
-     * 
-     * @param descriptors
-     *            the set of {@link SourceDescriptor}s to add the local catalog's descriptor to
+     *
+     * @param descriptors the set of {@link SourceDescriptor}s to add the local catalog's descriptor to
      */
     protected void addCatalogSourceDescriptor(Set<SourceDescriptor> descriptors) {
         /*
@@ -741,7 +708,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     @Override
     public CreateResponse create(CreateRequest createRequest) throws IngestException,
-        SourceUnavailableException {
+            SourceUnavailableException {
         final String methodName = "create";
         logger.entry(methodName);
         CreateRequest createReq = createRequest;
@@ -751,7 +718,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
         if (!sourceIsAvailable(catalog)) {
             if (INGEST_LOGGER.isWarnEnabled()) {
                 INGEST_LOGGER.warn("Error on create operation, local provider not available. {}"
-                        + " metacards failed to ingest. {}", createReq.getMetacards().size(),
+                                + " metacards failed to ingest. {}",
+                        createReq.getMetacards().size(),
                         buildIngestLog(createReq));
             }
             throw new SourceUnavailableException(
@@ -792,7 +760,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
             if (ingestError != null && INGEST_LOGGER.isWarnEnabled()) {
                 INGEST_LOGGER.warn("Error on create operation. {} metacards failed to ingest. {}",
                         new Object[] {createReq.getMetacards().size(), buildIngestLog(createReq),
-                            ingestError});
+                                ingestError});
             }
         }
 
@@ -827,7 +795,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     @Override
     public UpdateResponse update(UpdateRequest updateRequest) throws IngestException,
-        SourceUnavailableException {
+            SourceUnavailableException {
         final String methodName = "update";
         logger.entry(methodName);
         if (!sourceIsAvailable(catalog)) {
@@ -880,7 +848,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     @Override
     public DeleteResponse delete(DeleteRequest deleteRequest) throws IngestException,
-        SourceUnavailableException {
+            SourceUnavailableException {
         final String methodName = "delete";
         logger.entry(methodName);
         if (!sourceIsAvailable(catalog)) {
@@ -934,13 +902,13 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     @Override
     public QueryResponse query(QueryRequest fedQueryRequest) throws UnsupportedQueryException,
-        FederationException {
+            FederationException {
         return query(fedQueryRequest, null);
     }
 
     /**
      * Determines if this catalog framework has any {@link ConnectedSource}s configured.
-     * 
+     *
      * @return true if this framework has any connected sources configured, false otherwise
      */
     protected boolean connectedSourcesExist() {
@@ -950,9 +918,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     /**
      * Determines if the specified {@link QueryRequest} is a federated query, meaning it is either
      * an enterprise query or it lists specific sources to be queried by their source IDs.
-     * 
-     * @param queryRequest
-     *            the {@link QueryRequest}
+     *
+     * @param queryRequest the {@link QueryRequest}
      * @return true if the request is an enterprise or site-specific query, false otherwise
      */
     protected boolean isFederated(QueryRequest queryRequest) {
@@ -965,13 +932,13 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
         } else {
             return (sourceIds.size() > 1)
                     || (sourceIds.size() == 1 && !sourceIds.contains("")
-                            && !sourceIds.contains(null) && !sourceIds.contains(getId()));
+                    && !sourceIds.contains(null) && !sourceIds.contains(getId()));
         }
     }
 
     @Override
     public QueryResponse query(QueryRequest queryRequest, FederationStrategy strategy)
-        throws UnsupportedQueryException, FederationException {
+            throws UnsupportedQueryException, FederationException {
 
         String methodName = "query";
         logger.entry(methodName);
@@ -1034,15 +1001,14 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
      * Executes a query using the specified {@link QueryRequest} and {@link FederationStrategy}.
      * Based on the isEnterprise and sourceIds list in the query request, the federated query may
      * include the local provider and {@link ConnectedSource}s.
-     * 
-     * @param queryRequest
-     *            the {@link QueryRequest}
+     *
+     * @param queryRequest the {@link QueryRequest}
      * @param strategy
      * @return the {@link QueryResponse}
      * @throws FederationException
      */
     private QueryResponse doQuery(QueryRequest queryRequest, FederationStrategy strategy)
-        throws FederationException {
+            throws FederationException {
         String methodName = "doQuery";
         logger.entry(methodName);
 
@@ -1061,7 +1027,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
             if (sourceIds != null && !sourceIds.isEmpty()) {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Enterprise Query also included specific sites which will now be ignored");
+                    logger.debug(
+                            "Enterprise Query also included specific sites which will now be ignored");
                 }
                 sourceIds.clear();
             }
@@ -1156,12 +1123,10 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     /**
      * Adds any exceptions to the query response's processing details.
-     * 
-     * @param exceptions
-     *            the set of exceptions to include in the response's {@link ProcessingDetails}. Can
-     *            be empty, but cannot be null.
-     * @param response
-     *            the {@link QueryResponse} to add the exceptions to
+     *
+     * @param exceptions the set of exceptions to include in the response's {@link ProcessingDetails}. Can
+     *                   be empty, but cannot be null.
+     * @param response   the {@link QueryResponse} to add the exceptions to
      * @return the modified {@link QueryResponse}
      */
     protected QueryResponse addProcessingDetails(Set<ProcessingDetails> exceptions,
@@ -1170,7 +1135,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
         if (!exceptions.isEmpty()) {
             // we have exceptions to merge in
             if (sourceDetails == null) {
-                logger.error("Could not add Query exceptions to a QueryResponse because the list of ProcessingDetails was null -- according to the API this should not happen");
+                logger.error(
+                        "Could not add Query exceptions to a QueryResponse because the list of ProcessingDetails was null -- according to the API this should not happen");
             } else {
                 // need to merge them together.
                 sourceDetails.addAll(exceptions);
@@ -1183,23 +1149,22 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
      * Determines if the local catlog provider's source ID is included in the list of source IDs. A
      * source ID in the list of null or an empty string are treated the same as the local source's
      * actual ID being in the list.
-     * 
-     * @param sourceIds
-     *            the list of source IDs to examine
+     *
+     * @param sourceIds the list of source IDs to examine
      * @return true if the list includes the local source's ID, false otherwise
      */
     private boolean includesLocalSources(Set<String> sourceIds) {
         return sourceIds != null
                 && (sourceIds.contains(getId()) || sourceIds.contains("") || sourceIds
-                        .contains(null));
+                .contains(null));
     }
 
     /**
      * Whether this {@link CatalogFramework} is configured with a {@link CatalogProvider}.
      * {@link FanoutCatalogFramework} does not.
-     * 
+     *
      * @return true if this {@link CatalogFrameworkImpl} has a {@link CatalogProvider} configured,
-     *         false otherwise
+     * false otherwise
      */
     protected boolean hasCatalogProvider() {
         if (this.catalog != null) {
@@ -1242,7 +1207,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
                     + transformerShortname);
         }
         if (refs == null || refs.length == 0) {
-            throw new IllegalArgumentException("Transformer " + transformerShortname + " not found");
+            throw new IllegalArgumentException(
+                    "Transformer " + transformerShortname + " not found");
         } else {
             try {
                 MetacardTransformer transformer = (MetacardTransformer) context.getService(refs[0]);
@@ -1272,7 +1238,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
         }
 
         if (refs == null || refs.length == 0) {
-            throw new IllegalArgumentException("Transformer " + transformerShortname + " not found");
+            throw new IllegalArgumentException(
+                    "Transformer " + transformerShortname + " not found");
         } else {
             try {
                 QueryResponseTransformer transformer = (QueryResponseTransformer) context
@@ -1291,7 +1258,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     @Override
     public ResourceResponse getLocalResource(ResourceRequest resourceRequest) throws IOException,
-        ResourceNotFoundException, ResourceNotSupportedException {
+            ResourceNotFoundException, ResourceNotSupportedException {
         String methodName = "getLocalResource";
         logger.debug("ENTERING: " + methodName);
         ResourceResponse resourceResponse = getResource(resourceRequest, false, getId());
@@ -1301,7 +1268,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     @Override
     public ResourceResponse getResource(ResourceRequest resourceRequest, String resourceSiteName)
-        throws IOException, ResourceNotFoundException, ResourceNotSupportedException {
+            throws IOException, ResourceNotFoundException, ResourceNotSupportedException {
         String methodName = "getResource";
         logger.debug("ENTERING: " + methodName);
         ResourceResponse resourceResponse = getResource(resourceRequest, false, resourceSiteName);
@@ -1311,7 +1278,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     @Override
     public ResourceResponse getEnterpriseResource(ResourceRequest resourceRequest)
-        throws IOException, ResourceNotFoundException, ResourceNotSupportedException {
+            throws IOException, ResourceNotFoundException, ResourceNotSupportedException {
         String methodName = "getEnterpriseResource";
         logger.debug("ENTERING: " + methodName);
         ResourceResponse resourceResponse = getResource(resourceRequest, true, null);
@@ -1332,7 +1299,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     @SuppressWarnings("javadoc")
     protected ResourceResponse getResource(ResourceRequest resourceRequest, boolean isEnterprise,
             String resourceSiteName) throws IOException, ResourceNotFoundException,
-        ResourceNotSupportedException {
+            ResourceNotSupportedException {
         String methodName = "getResource";
         logger.entry(methodName);
         ResourceResponse resourceResponse = null;
@@ -1375,7 +1342,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
             // If so, the metacard needs to be found and the Resource URI
             StringBuilder resolvedSourceIdHolder = new StringBuilder();
 
-            ResourceInfo resourceInfo = getResourceInfo(resourceReq, resourceSourceName, isEnterprise,
+            ResourceInfo resourceInfo = getResourceInfo(resourceReq, resourceSourceName,
+                    isEnterprise,
                     resolvedSourceIdHolder, requestProperties);
             if (resourceInfo == null) {
                 throw new ResourceNotFoundException(
@@ -1384,7 +1352,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
             }
             URI responseURI = resourceInfo.getResourceUri();
             Metacard metacard = resourceInfo.getMetacard();
-            
+
             String resolvedSourceId = resolvedSourceIdHolder.toString();
             logger.debug("resolvedSourceId = {}", resolvedSourceId);
             logger.debug("ID = {}", getId());
@@ -1398,7 +1366,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
                 // handle retrieving the product on the correct source
                 resourceSourceName = resolvedSourceId;
             }
-            
+
             String key;
             try {
                 key = new CacheKey(metacard, resourceRequest).generateKey();
@@ -1440,13 +1408,18 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
                 if (source != null) {
                     // If no cached entry found for product being retrieved
-                	if(resourceResponse == null) {
+                    if (resourceResponse == null) {
                         logger.debug("Retrieving product from remote source {}", source.getId());
-                        ResourceRetriever retriever = new RemoteResourceRetriever(source, responseURI, requestProperties);
-                        ReliableResourceDownloadManager downloadManager = new ReliableResourceDownloadManager(maxRetryAttempts,
-                                delayBetweenAttempts, monitorPeriod, cacheEnabled, productCache, cacheWhenCanceled, retrieveStatusEventPublisher, retrieveStatusEventListener, downloadStatusInfo);
+                        ResourceRetriever retriever = new RemoteResourceRetriever(source,
+                                responseURI, requestProperties);
+                        ReliableResourceDownloadManager downloadManager = new ReliableResourceDownloadManager(
+                                maxRetryAttempts,
+                                delayBetweenAttempts, monitorPeriod, cacheEnabled, productCache,
+                                cacheWhenCanceled, retrieveStatusEventPublisher,
+                                retrieveStatusEventListener, downloadStatusInfo);
                         try {
-                            resourceResponse = downloadManager.download(resourceRequest, metacard, retriever);
+                            resourceResponse = downloadManager
+                                    .download(resourceRequest, metacard, retriever);
                         } catch (DownloadException e) {
                             logger.info("Unable to download resource", e);
                         }
@@ -1459,11 +1432,16 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
                 // If no cached entry found for product being retrieved
                 if (resourceResponse == null) {
                     logger.debug("Retrieving product from local source {}", resourceSourceName);
-                    ResourceRetriever retriever = new LocalResourceRetriever(resourceReaders, responseURI, requestProperties);
-                    ReliableResourceDownloadManager downloadManager = new ReliableResourceDownloadManager(maxRetryAttempts,
-                            delayBetweenAttempts, monitorPeriod, cacheEnabled, productCache, cacheWhenCanceled, retrieveStatusEventPublisher, retrieveStatusEventListener, downloadStatusInfo);
+                    ResourceRetriever retriever = new LocalResourceRetriever(resourceReaders,
+                            responseURI, requestProperties);
+                    ReliableResourceDownloadManager downloadManager = new ReliableResourceDownloadManager(
+                            maxRetryAttempts,
+                            delayBetweenAttempts, monitorPeriod, cacheEnabled, productCache,
+                            cacheWhenCanceled, retrieveStatusEventPublisher,
+                            retrieveStatusEventListener, downloadStatusInfo);
                     try {
-                        resourceResponse = downloadManager.download(resourceRequest, metacard, retriever);
+                        resourceResponse = downloadManager
+                                .download(resourceRequest, metacard, retriever);
                     } catch (DownloadException e) {
                         logger.info("Unable to download resource", e);
                     }
@@ -1501,9 +1479,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     /**
      * To be set via Spring/Blueprint
-     * 
-     * @param threadPoolSize
-     *            the number of threads in the pool, 0 for an automatically-managed pool
+     *
+     * @param threadPoolSize the number of threads in the pool, 0 for an automatically-managed pool
      */
     public synchronized void setPoolSize(int poolSize) {
         logger.debug("Setting poolSize = " + poolSize);
@@ -1534,12 +1511,11 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     /**
      * Retrieves a resource using the specified URI assuming this catalog framework has a
      * {@link ResourceReader} with a scheme that matches the scheme in the specified URI.
-     * 
+     *
      * @param resourceUri
      * @param properties
      * @return the {@link ResourceResponse}
-     * @throws ResourceNotFoundException
-     *             if a {@link ResourceReader} with the input URI's scheme is not found
+     * @throws ResourceNotFoundException if a {@link ResourceReader} with the input URI's scheme is not found
      */
     protected ResourceResponse getResourceUsingResourceReader(URI resourceUri,
             Map<String, Serializable> properties) throws ResourceNotFoundException {
@@ -1551,37 +1527,40 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
             throw new ResourceNotFoundException("Unable to find resource due to null URI");
         }
 
-		for (ResourceReader reader : resourceReaders) {
-			if (reader != null) {
-				String scheme = resourceUri.getScheme();
-				if (reader.getSupportedSchemes().contains(scheme)) {
-					try {
-						logger.debug("Found an acceptable resource reader ("
-								+ reader.getId() + ") for URI "
-								+ resourceUri.toASCIIString());
-						resource = reader.retrieveResource(resourceUri,
-								properties);
-						if (resource != null) {
-							break;
-						} else {
-							logger.info("Resource returned from ResourceReader "
-									+ reader.getId()
-									+ " was null.  Checking other readers for URI: "
-									+ resourceUri);
-						}
-					} catch (ResourceNotFoundException e) {
-						logger.debug("Enterprise Search: Product not found using resource reader with name "
-								+ reader.getId());
-					} catch (ResourceNotSupportedException e) {
-						logger.debug("Enterprise Search: Product not found using resource reader with name "
-								+ reader.getId());
-					} catch (IOException ioe) {
-						logger.debug("Enterprise Search: Product not found using resource reader with name "
-								+ reader.getId());
-					}
-				}
-			}
-		}
+        for (ResourceReader reader : resourceReaders) {
+            if (reader != null) {
+                String scheme = resourceUri.getScheme();
+                if (reader.getSupportedSchemes().contains(scheme)) {
+                    try {
+                        logger.debug("Found an acceptable resource reader ("
+                                + reader.getId() + ") for URI "
+                                + resourceUri.toASCIIString());
+                        resource = reader.retrieveResource(resourceUri,
+                                properties);
+                        if (resource != null) {
+                            break;
+                        } else {
+                            logger.info("Resource returned from ResourceReader "
+                                    + reader.getId()
+                                    + " was null.  Checking other readers for URI: "
+                                    + resourceUri);
+                        }
+                    } catch (ResourceNotFoundException e) {
+                        logger.debug(
+                                "Enterprise Search: Product not found using resource reader with name "
+                                        + reader.getId());
+                    } catch (ResourceNotSupportedException e) {
+                        logger.debug(
+                                "Enterprise Search: Product not found using resource reader with name "
+                                        + reader.getId());
+                    } catch (IOException ioe) {
+                        logger.debug(
+                                "Enterprise Search: Product not found using resource reader with name "
+                                        + reader.getId());
+                    }
+                }
+            }
+        }
 
         if (resource == null) {
             throw new ResourceNotFoundException(
@@ -1590,17 +1569,17 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
         }
         logger.debug("Received resource, sending back: " + resource.getResource().getName());
         logger.exit(methodName);
-        
+
         return resource;
     }
 
     /**
      * Retrieves a resource by URI.
-     * 
+     * <p/>
      * The {@link ResourceRequest} can specify either the product's URI or ID. If the product ID is
      * specified, then the matching {@link Metacard} must first be retrieved and the product URI
      * extracted from this {@link Metacard}.
-     * 
+     *
      * @param resourceRequest
      * @param site
      * @param isEnterprise
@@ -1613,7 +1592,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     protected URI getResourceURI(ResourceRequest resourceRequest, String site,
             boolean isEnterprise, StringBuilder federatedSite,
             Map<String, Serializable> requestProperties) throws ResourceNotSupportedException,
-        ResourceNotFoundException {
+            ResourceNotFoundException {
 
         String methodName = "getResourceURI";
         logger.entry(methodName);
@@ -1637,7 +1616,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
                     // where the product's metacard is stored.
                     QueryRequest queryRequest = new QueryRequestImpl(propertyEqualToUriQuery,
                             isEnterprise, Collections.singletonList(site == null ? this.getId()
-                                    : site), resourceRequest.getProperties());
+                            : site), resourceRequest.getProperties());
 
                     QueryResponse queryResponse = query(queryRequest);
                     if (queryResponse.getResults().size() > 0) {
@@ -1717,13 +1696,14 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
         }
         return resourceUri;
     }
+
     /**
      * Retrieves a resource by URI.
-     * 
+     * <p/>
      * The {@link ResourceRequest} can specify either the product's URI or ID. If the product ID is
      * specified, then the matching {@link Metacard} must first be retrieved and the product URI
      * extracted from this {@link Metacard}.
-     * 
+     *
      * @param resourceRequest
      * @param site
      * @param isEnterprise
@@ -1736,7 +1716,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     protected ResourceInfo getResourceInfo(ResourceRequest resourceRequest, String site,
             boolean isEnterprise, StringBuilder federatedSite,
             Map<String, Serializable> requestProperties) throws ResourceNotSupportedException,
-        ResourceNotFoundException {
+            ResourceNotFoundException {
 
         String methodName = "getResourceInfo";
         logger.entry(methodName);
@@ -1761,7 +1741,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
                     // where the product's metacard is stored.
                     QueryRequest queryRequest = new QueryRequestImpl(propertyEqualToUriQuery,
                             isEnterprise, Collections.singletonList(site == null ? this.getId()
-                                    : site), resourceRequest.getProperties());
+                            : site), resourceRequest.getProperties());
 
                     QueryResponse queryResponse = query(queryRequest);
                     if (queryResponse.getResults().size() > 0) {
@@ -1839,7 +1819,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
         if (resourceUri == null) {
             throw new ResourceNotFoundException(DEFAULT_RESOURCE_NOT_FOUND_MESSAGE);
         }
-        
+
         return new ResourceInfo(new MetacardImpl(metacard), resourceUri);
     }
 
@@ -1854,9 +1834,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     /**
      * Checks that the specified source is valid and available.
-     * 
-     * @param source
-     *            the {@link Source} to check availability of
+     *
+     * @param source the {@link Source} to check availability of
      * @return true if the {@link Source} is available, false otherwise
      */
     protected boolean sourceIsAvailable(Source source) {
@@ -1875,7 +1854,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
             if (cachedSource != null) {
                 available = cachedSource.isAvailable();
             }
-            
+
             if (!available) {
                 logger.warn("source \"" + source.getId() + "\" is not available");
             }
@@ -1893,15 +1872,12 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
      * Validates that the {@link CreateResponse} has one or more {@link Metacard}s in it that were
      * created in the catalog, and that the original {@link CreateRequest} is included in the
      * response.
-     * 
-     * @param createResponse
-     *            the original {@link CreateResponse} returned from the catalog provider
-     * @param createRequest
-     *            the original {@link CreateRequest} sent to the catalog provider
+     *
+     * @param createResponse the original {@link CreateResponse} returned from the catalog provider
+     * @param createRequest  the original {@link CreateRequest} sent to the catalog provider
      * @return the updated {@link CreateResponse}
-     * @throws IngestException
-     *             if original {@link CreateResponse} passed in is null or the {@link Metacard}s
-     *             list in the response is null
+     * @throws IngestException if original {@link CreateResponse} passed in is null or the {@link Metacard}s
+     *                         list in the response is null
      */
     protected CreateResponse validateFixCreateResponse(CreateResponse createResponse,
             CreateRequest createRequest) throws IngestException {
@@ -1924,15 +1900,12 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
      * Validates that the {@link UpdateResponse} has one or more {@link Metacard}s in it that were
      * updated in the catalog, and that the original {@link UpdateRequest} is included in the
      * response.
-     * 
-     * @param updateResponse
-     *            the original {@link UpdateResponse} returned from the catalog provider
-     * @param updateRequest
-     *            the original {@link UpdateRequest} sent to the catalog provider
+     *
+     * @param updateResponse the original {@link UpdateResponse} returned from the catalog provider
+     * @param updateRequest  the original {@link UpdateRequest} sent to the catalog provider
      * @return the updated {@link UpdateResponse}
-     * @throws IngestException
-     *             if original {@link UpdateResponse} passed in is null or the {@link Metacard}s
-     *             list in the response is null
+     * @throws IngestException if original {@link UpdateResponse} passed in is null or the {@link Metacard}s
+     *                         list in the response is null
      */
     protected UpdateResponse validateFixUpdateResponse(UpdateResponse updateResponse,
             UpdateRequest updateRequest) throws IngestException {
@@ -1956,15 +1929,12 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
      * Validates that the {@link DeleteResponse} has one or more {@link Metacard}s in it that were
      * deleted in the catalog, and that the original {@link DeleteRequest} is included in the
      * response.
-     * 
-     * @param deleteResponse
-     *            the original {@link DeleteResponse} returned from the catalog provider
-     * @param deleteRequest
-     *            the original {@link DeleteRequest} sent to the catalog provider
+     *
+     * @param deleteResponse the original {@link DeleteResponse} returned from the catalog provider
+     * @param deleteRequest  the original {@link DeleteRequest} sent to the catalog provider
      * @return the updated {@link DeleteResponse}
-     * @throws IngestException
-     *             if original {@link DeleteResponse} passed in is null or the {@link Metacard}s
-     *             list in the response is null
+     * @throws IngestException if original {@link DeleteResponse} passed in is null or the {@link Metacard}s
+     *                         list in the response is null
      */
     protected DeleteResponse validateFixDeleteResponse(DeleteResponse deleteResponse,
             DeleteRequest deleteRequest) throws IngestException {
@@ -1987,15 +1957,12 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     /**
      * Validates that the {@link ResourceResponse} has a {@link Resource} in it that was retrieved,
      * and that the original {@link ResourceRequest} is included in the response.
-     * 
-     * @param getResourceResponse
-     *            the original {@link ResourceResponse} returned from the source
-     * @param getResourceRequest
-     *            the original {@link ResourceRequest} sent to the source
+     *
+     * @param getResourceResponse the original {@link ResourceResponse} returned from the source
+     * @param getResourceRequest  the original {@link ResourceRequest} sent to the source
      * @return the updated {@link ResourceResponse}
-     * @throws ResourceNotFoundException
-     *             if the original {@link ResourceResponse} is null or the resource could not be
-     *             found
+     * @throws ResourceNotFoundException if the original {@link ResourceResponse} is null or the resource could not be
+     *                                   found
      */
     protected ResourceResponse validateFixGetResourceResponse(ResourceResponse getResourceResponse,
             ResourceRequest getResourceRequest) throws ResourceNotFoundException {
@@ -2019,14 +1986,11 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     /**
      * Validates that the {@link QueryResponse} has a non-null list of {@link Result}s in it, and
      * that the original {@link QueryRequest} is included in the response.
-     * 
-     * @param sourceResponse
-     *            the original {@link SourceResponse} returned from the source
-     * @param queryRequest
-     *            the original {@link QueryRequest} sent to the source
+     *
+     * @param sourceResponse the original {@link SourceResponse} returned from the source
+     * @param queryRequest   the original {@link QueryRequest} sent to the source
      * @return the updated {@link QueryResponse}
-     * @throws UnsupportedQueryException
-     *             if the original {@link QueryResponse} is null or the results list is null
+     * @throws UnsupportedQueryException if the original {@link QueryResponse} is null or the results list is null
      */
     protected SourceResponse validateFixQueryResponse(SourceResponse sourceResponse,
             QueryRequest queryRequest) throws UnsupportedQueryException {
@@ -2050,12 +2014,10 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     /**
      * Validates that the {@link CreateRequest} is non-null and has a non-empty list of
      * {@link Metacard}s in it.
-     * 
-     * @param createRequest
-     *            the {@link CreateRequest}
-     * @throws IngestException
-     *             if the {@link CreateRequest} is null, or request has a null or empty list of
-     *             {@link Metacard}s
+     *
+     * @param createRequest the {@link CreateRequest}
+     * @throws IngestException if the {@link CreateRequest} is null, or request has a null or empty list of
+     *                         {@link Metacard}s
      */
     protected void validateCreateRequest(CreateRequest createRequest) throws IngestException {
         if (createRequest == null) {
@@ -2073,12 +2035,10 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
      * Validates that the {@link UpdateRequest} is non-null, has a non-empty list of
      * {@link Metacard}s in it, and a non-null attribute name (which specifies if the update is
      * being done by product URI or ID).
-     * 
-     * @param updateRequest
-     *            the {@link UpdateRequest}
-     * @throws IngestException
-     *             if the {@link UpdateRequest} is null, or has null or empty {@link Metacard} list,
-     *             or a null attribute name.
+     *
+     * @param updateRequest the {@link UpdateRequest}
+     * @throws IngestException if the {@link UpdateRequest} is null, or has null or empty {@link Metacard} list,
+     *                         or a null attribute name.
      */
     protected void validateUpdateRequest(UpdateRequest updateRequest) throws IngestException {
         if (updateRequest == null) {
@@ -2096,12 +2056,10 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
      * Validates that the {@link DeleteRequest} is non-null, has a non-empty list of
      * {@link Metacard}s in it, and a non-null attribute name (which specifies if the delete is
      * being done by product URI or ID).
-     * 
-     * @param deleteRequest
-     *            the {@link DeleteRequest}
-     * @throws IngestException
-     *             if the {@link DeleteRequest} is null, or has null or empty {@link Metacard} list,
-     *             or a null attribute name
+     *
+     * @param deleteRequest the {@link DeleteRequest}
+     * @throws IngestException if the {@link DeleteRequest} is null, or has null or empty {@link Metacard} list,
+     *                         or a null attribute name
      */
     protected void validateDeleteRequest(DeleteRequest deleteRequest) throws IngestException {
         if (deleteRequest == null) {
@@ -2119,14 +2077,12 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
      * Validates that the {@link ResourceRequest} is non-null, a non-null attribute name (which
      * specifies if the retrieval is being done by product URI or ID), and a non-null attribute
      * value.
-     * 
-     * @param getResourceRequest
-     *            the {@link ResourceRequest}
-     * @throws ResourceNotSupportedException
-     *             if the {@link ResourceRequest} is null, or has a null attribute value or name
+     *
+     * @param getResourceRequest the {@link ResourceRequest}
+     * @throws ResourceNotSupportedException if the {@link ResourceRequest} is null, or has a null attribute value or name
      */
     protected void validateGetResourceRequest(ResourceRequest getResourceRequest)
-        throws ResourceNotSupportedException {
+            throws ResourceNotSupportedException {
         if (getResourceRequest == null) {
             throw new ResourceNotSupportedException(
                     "GetResourceRequest was null, either passed in from endpoint, or as output from PreResourcePlugin");
@@ -2140,13 +2096,12 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
     /**
      * Validates that the {@link QueryRequest} is non-null and that the query in it is non-null.
-     * 
-     * @param queryRequest
-     *            the {@link QueryRequest}
-     * @throws UnsupportedQueryException
-     *             if the {@link QueryRequest} is null or the query in it is null
+     *
+     * @param queryRequest the {@link QueryRequest}
+     * @throws UnsupportedQueryException if the {@link QueryRequest} is null or the query in it is null
      */
-    protected void validateQueryRequest(QueryRequest queryRequest) throws UnsupportedQueryException {
+    protected void validateQueryRequest(QueryRequest queryRequest)
+            throws UnsupportedQueryException {
         if (queryRequest == null) {
             throw new UnsupportedQueryException(
                     "QueryRequest was null, either passed in from endpoint, or as output from a PreQuery Plugin");
@@ -2186,7 +2141,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     @Deprecated
     @Override
     public Map<String, Set<String>> getLocalResourceOptions(String metacardId)
-        throws ResourceNotFoundException {
+            throws ResourceNotFoundException {
         logger.trace("ENTERING: getLocalResourceOptions");
 
         Map<String, Set<String>> optionsMap = null;
@@ -2215,7 +2170,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
         } catch (FederationException e) {
             logger.warn("Error federating query for metacard " + metacardId, e);
             logger.trace("EXITING: getLocalResourceOptions");
-            throw new ResourceNotFoundException("Error finding metacard due to Federation issue", e);
+            throw new ResourceNotFoundException("Error finding metacard due to Federation issue",
+                    e);
         } catch (IllegalArgumentException e) {
             logger.warn("Metacard couldn't be found " + metacardId, e);
             logger.trace("EXITING: getLocalResourceOptions");
@@ -2230,7 +2186,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     @Deprecated
     @Override
     public Map<String, Set<String>> getEnterpriseResourceOptions(String metacardId)
-        throws ResourceNotFoundException {
+            throws ResourceNotFoundException {
         logger.trace("ENTERING: getEnterpriseResourceOptions");
         Set<String> supportedOptions = Collections.emptySet();
 
@@ -2266,7 +2222,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
         } catch (FederationException e) {
             logger.warn("Error federating query for metacard " + metacardId, e);
             logger.trace("EXITING: getEnterpriseResourceOptions");
-            throw new ResourceNotFoundException("Error finding metacard due to Federation issue", e);
+            throw new ResourceNotFoundException("Error finding metacard due to Federation issue",
+                    e);
         } catch (IllegalArgumentException e) {
             logger.warn("Metacard couldn't be found " + metacardId, e);
             logger.trace("EXITING: getEnterpriseResourceOptions");
@@ -2280,7 +2237,7 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     @Deprecated
     @Override
     public Map<String, Set<String>> getResourceOptions(String metacardId, String sourceId)
-        throws ResourceNotFoundException {
+            throws ResourceNotFoundException {
         logger.trace("ENTERING: getResourceOptions");
         Map<String, Set<String>> optionsMap = null;
         try {
@@ -2317,7 +2274,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
         } catch (FederationException e) {
             logger.warn("Error federating query for metacard " + metacardId, e);
             logger.trace("EXITING: getResourceOptions");
-            throw new ResourceNotFoundException("Error finding metacard due to Federation issue", e);
+            throw new ResourceNotFoundException("Error finding metacard due to Federation issue",
+                    e);
         } catch (IllegalArgumentException e) {
             logger.warn("Metacard couldn't be found " + metacardId, e);
             logger.trace("EXITING: getResourceOptions");
@@ -2332,9 +2290,8 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
      * Get the supported options from the {@link ResourceReader} that matches the scheme in the
      * specified {@link Metacard}'s URI. Only look in the local provider for the specified
      * {@link Metacard}.
-     * 
-     * @param metacard
-     *            the {@link Metacard} to get the supported options for
+     *
+     * @param metacard the {@link Metacard} to get the supported options for
      * @return the {@link Set} of supported options for the metacard
      */
     @Deprecated
@@ -2360,18 +2317,15 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
     /**
      * Get the supported options from the {@link ResourceReader} that matches the scheme in the
      * specified {@link Metacard}'s URI. Only look in the specified source for the {@link Metacard}.
-     * 
-     * @param metacard
-     *            the {@link Metacard} to get the supported options for
-     * @param sourceId
-     *            the ID of the federated source to look for the {@link Metacard}
+     *
+     * @param metacard the {@link Metacard} to get the supported options for
+     * @param sourceId the ID of the federated source to look for the {@link Metacard}
      * @return the {@link Set} of supported options for the metacard
-     * @throws ResourceNotFoundException
-     *             if the {@link Source} cannot be found for the source ID
+     * @throws ResourceNotFoundException if the {@link Source} cannot be found for the source ID
      */
     @Deprecated
     private Set<String> getOptionsFromFederatedSource(Metacard metacard, String sourceId)
-        throws ResourceNotFoundException {
+            throws ResourceNotFoundException {
         logger.trace("ENTERING: getOptionsFromFederatedSource");
 
         FederatedSource source = null;
@@ -2428,20 +2382,21 @@ public class CatalogFrameworkImpl extends DescribableImpl implements Configurati
 
         logger.debug("EXITING: " + methodName);
     }
-    
+
     protected class ResourceInfo {
         private Metacard metacard;
+
         private URI resourceUri;
-        
+
         public ResourceInfo(Metacard metacard, URI uri) {
             this.metacard = metacard;
             this.resourceUri = uri;
         }
-        
+
         public Metacard getMetacard() {
             return metacard;
         }
-        
+
         public URI getResourceUri() {
             return resourceUri;
         }
